@@ -24,13 +24,29 @@ export class Mapping {
 
   private findProjectRoot(): string {
     let currentDir = process.cwd();
+    const projectMarkers = [
+      'package.json',    // Node.js
+      '.git',           // Git repository
+      'pom.xml',        // Maven (Java)
+      'build.gradle',   // Gradle (Java)
+      'requirements.txt', // Python
+      'Cargo.toml',     // Rust
+      'go.mod',         // Go
+      'Gemfile',        // Ruby
+      'composer.json'   // PHP
+    ];
+
     while (currentDir !== '/') {
-      if (fs.existsSync(path.join(currentDir, 'package.json'))) {
-        return currentDir;
+      for (const marker of projectMarkers) {
+        if (fs.existsSync(path.join(currentDir, marker))) {
+          return currentDir;
+        }
       }
       currentDir = path.dirname(currentDir);
     }
-    throw new Error('Could not find project root (no package.json found)');
+
+    // If no project root markers found, use current directory
+    return process.cwd();
   }
 
   private parseRange(range: string): Range {

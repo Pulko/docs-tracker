@@ -5,9 +5,10 @@ A CLI tool for tracking and managing documentation updates in a codebase. DocsTr
 ## Features
 
 - **Advanced Mapping System**: Track code-to-documentation relationships with line-based and character-based precision
-- **Change Detection**: Identify modified but uncommitted files and detect needed documentation updates
+- **Change Detection**: Automatically detect when code changes require documentation updates
 - **Robust Validations**: Comprehensive checks for file existence, line lengths, and mapping conflicts
 - **User-Friendly CLI**: Simple commands for managing documentation mappings
+- **Project-Aware**: Automatically detects project root and supports various project types
 
 ## Installation
 
@@ -20,7 +21,12 @@ npm install -g docs-tracker
 ### Check Documentation Status
 
 ```bash
-doc-tracker check
+doc-tracker check <source> <target>
+```
+
+Example:
+```bash
+doc-tracker check src/index.ts:10-20 docs/api.md:5-15
 ```
 
 Scans mapped files for changes and flags outdated documentation.
@@ -28,46 +34,76 @@ Scans mapped files for changes and flags outdated documentation.
 ### Add a New Mapping
 
 ```bash
+doc-tracker add <source> <target>
+```
+
+Examples:
+```bash
 # Line-based mapping
 doc-tracker add src/main.py:12-20 docs/usage.md:5-10
 
 # Character-based mapping
-doc-tracker add src/main.py:12[5-30] docs/usage.md:5[0-15]
+doc-tracker add src/main.py:12@5-30 docs/usage.md:5@10-20
 ```
 
 ### List All Mappings
 
 ```bash
-# Basic list
 doc-tracker list
-
-# Detailed list with character-level information
-doc-tracker list --detailed
 ```
+
+Displays all configured documentation mappings with their indices.
 
 ### Remove a Mapping
 
 ```bash
-# Line-based mapping
-doc-tracker remove src/main.py:12-20
-
-# Character-based mapping
-doc-tracker remove src/main.py:12[5-30]
+doc-tracker remove <index>
 ```
 
-## Mapping File Format
-
-Mappings are stored in a `.doc-tracker` file in your project root. Each line represents a mapping in one of two formats:
-
-### Line-based Mapping
-```
-src/main.py:12-20 -> docs/usage.md:5-10
+Example:
+```bash
+doc-tracker remove 1
 ```
 
-### Character-based Mapping
-```
-src/main.py:12[5-30] -> docs/usage.md:5[0-15]
-```
+## Configuration
+
+Mappings are stored in `doc-tracker.json` in your project root. The tool automatically detects the project root by looking for common project markers:
+
+- `package.json` (Node.js)
+- `.git` (Git repository)
+- `pom.xml` (Maven/Java)
+- `build.gradle` (Gradle/Java)
+- `requirements.txt` (Python)
+- `Cargo.toml` (Rust)
+- `go.mod` (Go)
+- `Gemfile` (Ruby)
+- `composer.json` (PHP)
+
+If no project markers are found, the current directory is used as the project root.
+
+## Supported File Types
+
+### Source Files
+- JavaScript/TypeScript: `.js`, `.jsx`, `.ts`, `.tsx`
+- Python: `.py`
+- Java: `.java`
+- C/C++: `.c`, `.cpp`, `.h`, `.hpp`, `.cc`
+- Go: `.go`
+- Ruby: `.rb`
+- PHP: `.php`
+- Swift: `.swift`
+- Kotlin: `.kt`
+- Scala: `.scala`
+- Rust: `.rs`
+- And many more...
+
+### Documentation Files
+- Markdown: `.md`
+- Text: `.txt`
+- reStructuredText: `.rst`
+- AsciiDoc: `.adoc`
+- Word: `.doc`, `.docx`
+- PDF: `.pdf`
 
 ## Development
 
