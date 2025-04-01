@@ -1,0 +1,52 @@
+{
+  "name": "docs-tracker",
+  "version": "1.0.0",
+  "description": "CLI tool for tracking and managing documentation updates in a codebase",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "bin": {
+    "doc-tracker": "./dist/index.js"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "test": "jest",
+    "prepublishOnly": "npm run build",
+    "prebuild": "rimraf dist"
+  },
+  "dependencies": {
+    "chalk": "^4.1.2",
+    "commander": "^11.1.0",
+    "fs-extra": "^11.2.0"
+  },
+  "devDependencies": {
+    "@types/fs-extra": "^11.0.4",
+    "@types/jest": "^29.5.0",
+    "@types/node": "^18.0.0",
+    "jest": "^29.7.0",
+    "rimraf": "^5.0.10",
+    "ts-jest": "^29.3.1",
+    "typescript": "^4.9.0"
+  },
+  "keywords": [
+    "documentation",
+    "cli",
+    "tracking",
+    "development",
+    "tools"
+  ],
+  "author": "Fedor Tkachenko",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Pulko/docs-tracker.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Pulko/docs-tracker/issues"
+  },
+  "homepage": "https://github.com/Pulko/docs-tracker#readme"
+}
