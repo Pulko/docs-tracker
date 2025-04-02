@@ -147,7 +147,7 @@ export class Mapping implements MappingRecord {
         errors.push(`Invalid character range order: ${this.source.startChar}-${this.source.endChar}`);
       }
     } else {
-      if (this.source.startLine! >= this.source.endLine!) {
+      if (this.source.startLine! > this.source.endLine!) {
         errors.push(`Invalid line range order: ${this.source.startLine}-${this.source.endLine}`);
       }
     }
@@ -157,7 +157,7 @@ export class Mapping implements MappingRecord {
         errors.push(`Invalid target character range order: ${this.target.startChar}-${this.target.endChar}`);
       }
     } else {
-      if (this.target.startLine! >= this.target.endLine!) {
+      if (this.target.startLine! > this.target.endLine!) {
         errors.push(`Invalid target line range order: ${this.target.startLine}-${this.target.endLine}`);
       }
     }
