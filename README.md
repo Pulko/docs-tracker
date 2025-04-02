@@ -21,11 +21,15 @@ npm install -g docs-tracker
 ### Check Documentation Status
 
 ```bash
-doc-tracker check <source> <target>
+doc-tracker check [source] [target]
 ```
 
-Example:
+Examples:
 ```bash
+# Check all mappings
+doc-tracker check
+
+# Check specific mapping
 doc-tracker check src/index.ts:10-20 docs/api.md:5-15
 ```
 
@@ -67,7 +71,7 @@ doc-tracker remove 1
 
 ## Configuration
 
-Mappings are stored in `doc-tracker.json` in your project root. The tool automatically detects the project root by looking for common project markers:
+Mappings are stored in `.doc-tracker` in your project root. The tool automatically detects the project root by looking for common project markers:
 
 - `package.json` (Node.js)
 - `.git` (Git repository)
