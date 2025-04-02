@@ -2,83 +2,95 @@ import { Command } from 'commander';
 import fs from 'fs-extra';
 import path from 'path';
 import { listCommand } from '../list';
+import { Mapping } from '../../core/mapping';
 
-// Mock fs-extra
 jest.mock('fs-extra');
+jest.mock('../../core/mapping');
+
+const mockExit = jest.fn();
+const mockCwd = jest.fn().mockReturnValue('/mock/project/root');
+const mockConsoleLog = jest.fn();
+const mockConsoleError = jest.fn();
+
+// Mock process and console
+Object.defineProperty(process, 'exit', { value: mockExit });
+Object.defineProperty(process, 'cwd', { value: mockCwd });
+Object.defineProperty(console, 'log', { value: mockConsoleLog });
+Object.defineProperty(console, 'error', { value: mockConsoleError });
 
 describe('listCommand', () => {
-  let mockExit: jest.SpyInstance;
-  let mockLog: jest.SpyInstance;
-  let mockError: jest.SpyInstance;
-  const mockConfigPath = path.join(process.cwd(), 'doc-tracker.json');
+  const mockProjectRoot = '/mock/project/root';
+  const mockConfigPath = path.join(mockProjectRoot, '.doc-tracker');
+  const mockRecords = [
+    {
+      source: { file: 'src/index.ts', isCharacterRange: false, startLine: 1, endLine: 10 },
+      target: { file: 'docs/api.md', isCharacterRange: false, startLine: 1, endLine: 10 },
+      sourceHash: 'abc123',
+      targetHash: 'def456',
+    },
+  ];
 
   beforeEach(() => {
-    // Reset all mocks
     jest.clearAllMocks();
+    (Mapping.fromFile as jest.Mock).mockResolvedValue(mockRecords);
+  });
 
-    // Mock process.cwd
-    jest.spyOn(process, 'cwd').mockReturnValue('/mock/project/root');
-
-    // Mock process.exit
-    mockExit = jest.spyOn(process, 'exit').mockImplementation(() => {
-      throw new Error('process.exit() called');
-    });
-
-    // Mock console methods
-    mockLog = jest.spyOn(console, 'log').mockImplementation(() => {});
-    mockError = jest.spyOn(console, 'error').mockImplementation(() => {});
-
-    // Mock fs methods
+  it('should list all mappings when config exists', async () => {
     (fs.pathExists as jest.Mock).mockResolvedValue(true);
-    (fs.readJson as jest.Mock).mockResolvedValue({
-      mappings: [
-        { source: 'src/index.ts:1-1', target: 'docs/api.md:1-1' }
-      ]
-    });
-  });
+    (fs.readJson as jest.Mock).mockResolvedValue(mockRecords);
 
-  afterEach(() => {
-    mockExit.mockRestore();
-    mockLog.mockRestore();
-    mockError.mockRestore();
-  });
-
-  it('should display mappings when config file exists', async () => {
     await listCommand.parseAsync(['node', 'list']);
 
-    expect(mockLog).toHaveBeenCalledWith('Documentation Mappings:');
-    expect(mockLog).toHaveBeenCalledWith('1. src/index.ts:1-1 -> docs/api.md:1-1');
+    expect(fs.pathExists).toHaveBeenCalledWith(mockConfigPath);
+    expect(Mapping.fromFile).toHaveBeenCalledWith(mockConfigPath);
+    expect(mockConsoleLog).toHaveBeenCalledWith('Documentation Mappings:');
+    expect(mockConsoleLog).toHaveBeenCalledWith('=====================');
+    expect(mockConsoleLog).toHaveBeenCalledWith('1. src/index.ts:1-10 -> docs/api.md:1-10');
+    expect(mockExit).not.toHaveBeenCalled();
   });
 
   it('should handle empty config file', async () => {
-    (fs.readJson as jest.Mock).mockResolvedValue({ mappings: [] });
+    (fs.pathExists as jest.Mock).mockResolvedValue(true);
+    (fs.readJson as jest.Mock).mockResolvedValue([]);
+    (Mapping.fromFile as jest.Mock).mockResolvedValue([]);
 
     await listCommand.parseAsync(['node', 'list']);
 
-    expect(mockLog).toHaveBeenCalledWith('No documentation mappings found.');
+    expect(fs.pathExists).toHaveBeenCalledWith(mockConfigPath);
+    expect(Mapping.fromFile).toHaveBeenCalledWith(mockConfigPath);
+    expect(mockConsoleLog).toHaveBeenCalledWith('No documentation mappings found.');
+    expect(mockExit).not.toHaveBeenCalled();
   });
 
-  it('should handle missing config file', async () => {
+  it('should handle non-existent config file', async () => {
     (fs.pathExists as jest.Mock).mockResolvedValue(false);
 
     await listCommand.parseAsync(['node', 'list']);
 
-    expect(mockLog).toHaveBeenCalledWith('No documentation mappings found.');
+    expect(fs.pathExists).toHaveBeenCalledWith(mockConfigPath);
+    expect(mockConsoleLog).toHaveBeenCalledWith('No documentation mappings found.');
+    expect(mockExit).not.toHaveBeenCalled();
   });
 
   it('should handle file system errors', async () => {
-    (fs.readJson as jest.Mock).mockRejectedValue(new Error('File system error'));
+    const error = new Error('File system error');
+    (fs.pathExists as jest.Mock).mockRejectedValue(error);
+    (Mapping.fromFile as jest.Mock).mockRejectedValue(error);
 
-    await expect(listCommand.parseAsync(['node', 'list'])).rejects.toThrow('process.exit() called');
-    expect(mockError).toHaveBeenCalledWith('Error:', 'File system error');
+    await listCommand.parseAsync(['node', 'list']);
+
+    expect(mockConsoleError).toHaveBeenCalledWith('Error:', 'File system error');
+    expect(mockExit).toHaveBeenCalledWith(1);
   });
 
   it('should handle unexpected errors', async () => {
-    (fs.readJson as jest.Mock).mockImplementation(() => {
-      throw new Error('Unexpected error');
-    });
+    const error = new Error('Unexpected error');
+    (fs.pathExists as jest.Mock).mockRejectedValue(error);
+    (Mapping.fromFile as jest.Mock).mockRejectedValue(error);
 
-    await expect(listCommand.parseAsync(['node', 'list'])).rejects.toThrow('process.exit() called');
-    expect(mockError).toHaveBeenCalledWith('Error:', 'Unexpected error');
+    await listCommand.parseAsync(['node', 'list']);
+
+    expect(mockConsoleError).toHaveBeenCalledWith('Error:', 'Unexpected error');
+    expect(mockExit).toHaveBeenCalledWith(1);
   });
 }); 

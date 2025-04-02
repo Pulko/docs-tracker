@@ -1,19 +1,13 @@
 import { Command } from 'commander';
 import fs from 'fs-extra';
 import path from 'path';
-
-interface MappingConfig {
-  mappings: Array<{
-    source: string;
-    target: string;
-  }>;
-}
+import { Mapping } from '../core/mapping';
 
 export const listCommand = new Command('list')
   .description('List all documentation mappings')
   .action(async () => {
     try {
-      const configPath = path.join(process.cwd(), 'doc-tracker.json');
+      const configPath = path.join(process.cwd(), '.doc-tracker');
       const exists = await fs.pathExists(configPath);
 
       if (!exists) {
@@ -21,17 +15,23 @@ export const listCommand = new Command('list')
         return;
       }
 
-      const config = await fs.readJson(configPath);
+      const records = await Mapping.fromFile(configPath);
 
-      if (!config.mappings || config.mappings.length === 0) {
+      if (!records || records.length === 0) {
         console.log('No documentation mappings found.');
         return;
       }
 
       console.log('Documentation Mappings:');
       console.log('=====================');
-      config.mappings.forEach((mapping: { source: string; target: string }, index: number) => {
-        console.log(`${index + 1}. ${mapping.source} -> ${mapping.target}`);
+      records.forEach((record, index) => {
+        const sourceStr = `${record.source.file}:${record.source.isCharacterRange ? 
+          `${record.source.line}@${record.source.startChar}-${record.source.endChar}` : 
+          `${record.source.startLine}-${record.source.endLine}`}`;
+        const targetStr = `${record.target.file}:${record.target.isCharacterRange ? 
+          `${record.target.line}@${record.target.startChar}-${record.target.endChar}` : 
+          `${record.target.startLine}-${record.target.endLine}`}`;
+        console.log(`${index + 1}. ${sourceStr} -> ${targetStr}`);
       });
     } catch (error) {
       console.error('Error:', error instanceof Error ? error.message : 'Unknown error');

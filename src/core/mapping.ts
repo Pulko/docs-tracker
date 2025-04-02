@@ -1,5 +1,6 @@
 import fs from 'fs-extra';
 import path from 'path';
+import crypto from 'crypto';
 
 interface Range {
   file: string;
@@ -11,15 +12,26 @@ interface Range {
   endLine?: number;
 }
 
-export class Mapping {
-  private readonly projectRoot: string;
-  private readonly source: Range;
-  private readonly target: Range;
+interface MappingRecord {
+  source: Range;
+  target: Range;
+  sourceHash: string;
+  targetHash: string;
+}
 
-  constructor(source: string, target: string) {
+export class Mapping implements MappingRecord {
+  private readonly projectRoot: string;
+  public readonly source: Range;
+  public readonly target: Range;
+  public readonly sourceHash: string;
+  public readonly targetHash: string;
+
+  constructor(source: string, target: string, sourceHash?: string, targetHash?: string) {
     this.projectRoot = this.findProjectRoot();
     this.source = this.parseRange(source);
     this.target = this.parseRange(target);
+    this.sourceHash = sourceHash || '';
+    this.targetHash = targetHash || '';
   }
 
   private findProjectRoot(): string {
@@ -241,5 +253,77 @@ export class Mapping {
 
   public getProjectRoot(): string {
     return this.projectRoot;
+  }
+
+  public static async fromFile(filePath: string): Promise<MappingRecord[]> {
+    const content = await fs.readFile(filePath, 'utf-8');
+    return content
+      .split('\n')
+      .filter(line => line.trim())
+      .map(line => {
+        const [source, target, sourceHash, targetHash] = line.split(' ');
+        return new Mapping(source, target, sourceHash, targetHash);
+      });
+  }
+
+  public static async saveToFile(filePath: string, mappings: MappingRecord[]): Promise<void> {
+    const content = mappings
+      .map(m => `${m.source.file}:${m.source.isCharacterRange ? 
+        `${m.source.line}@${m.source.startChar}-${m.source.endChar}` : 
+        `${m.source.startLine}-${m.source.endLine}`} ${m.target.file}:${m.target.isCharacterRange ? 
+        `${m.target.line}@${m.target.startChar}-${m.target.endChar}` : 
+        `${m.target.startLine}-${m.target.endLine}`} ${m.sourceHash} ${m.targetHash}`)
+      .join('\n');
+    await fs.writeFile(filePath, content);
+  }
+
+  private async readSourceContent(): Promise<string> {
+    const filePath = path.join(this.projectRoot, this.source.file);
+    const content = await fs.readFile(filePath, 'utf-8');
+
+    if (this.source.isCharacterRange) {
+      const lines = content.split('\n');
+      const line = lines[this.source.line! - 1];
+      return line.substring(this.source.startChar! - 1, this.source.endChar!);
+    } else {
+      const lines = content.split('\n');
+      return lines.slice(this.source.startLine! - 1, this.source.endLine!).join('\n');
+    }
+  }
+
+  private async readTargetContent(): Promise<string> {
+    const filePath = path.join(this.projectRoot, this.target.file);
+    const content = await fs.readFile(filePath, 'utf-8');
+
+    if (this.target.isCharacterRange) {
+      const lines = content.split('\n');
+      const line = lines[this.target.line! - 1];
+      return line.substring(this.target.startChar! - 1, this.target.endChar!);
+    } else {
+      const lines = content.split('\n');
+      return lines.slice(this.target.startLine! - 1, this.target.endLine!).join('\n');
+    }
+  }
+
+  public async generateHashes(): Promise<{ sourceHash: string; targetHash: string }> {
+    const sourceContent = await this.readSourceContent();
+    const targetContent = await this.readTargetContent();
+    
+    return {
+      sourceHash: this.calculateHash(sourceContent),
+      targetHash: this.calculateHash(targetContent)
+    };
+  }
+
+  private calculateHash(content: string): string {
+    return crypto.createHash('sha256').update(content).digest('hex');
+  }
+
+  public getSourceHash(): string {
+    return this.sourceHash;
+  }
+
+  public getTargetHash(): string {
+    return this.targetHash;
   }
 } 

@@ -1,13 +1,7 @@
 import { Command } from 'commander';
 import fs from 'fs-extra';
 import path from 'path';
-
-interface MappingConfig {
-  mappings: Array<{
-    source: string;
-    target: string;
-  }>;
-}
+import { Mapping } from '../core/mapping';
 
 export const removeCommand = new Command('remove')
   .description('Remove a documentation mapping')
@@ -20,22 +14,23 @@ export const removeCommand = new Command('remove')
         throw new Error('Invalid index. Please provide a valid number.');
       }
 
-      const configPath = path.join(process.cwd(), 'doc-tracker.json');
+      const configPath = path.join(process.cwd(), '.doc-tracker');
       
       if (!await fs.pathExists(configPath)) {
         throw new Error('No mappings found');
       }
 
-      const config: MappingConfig = await fs.readJson(configPath);
+      const records = await Mapping.fromFile(configPath);
       
-      if (index < 0 || index >= config.mappings.length) {
-        throw new Error(`Invalid index. Please provide a number between 1 and ${config.mappings.length}`);
+      if (index < 0 || index >= records.length) {
+        throw new Error(`Invalid index. Please provide a number between 1 and ${records.length}`);
       }
 
-      const removedMapping = config.mappings.splice(index, 1)[0];
-      await fs.writeJson(configPath, config, { spaces: 2 });
+      const removedMapping = records[index];
+      records.splice(index, 1);
+      await Mapping.saveToFile(configPath, records);
 
-      console.log(`✅ Removed mapping: ${removedMapping.source} -> ${removedMapping.target}`);
+      console.log(`✅ Removed mapping: ${removedMapping.source.file} -> ${removedMapping.target.file}`);
     } catch (error) {
       console.error('Error:', error instanceof Error ? error.message : 'Unknown error');
       process.exit(1);

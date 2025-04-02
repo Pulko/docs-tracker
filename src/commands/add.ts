@@ -3,13 +3,6 @@ import fs from 'fs-extra';
 import path from 'path';
 import { Mapping } from '../core/mapping';
 
-interface MappingConfig {
-  mappings: Array<{
-    source: string;
-    target: string;
-  }>;
-}
-
 export const addCommand = new Command('add')
   .description('Add a new documentation mapping')
   .argument('<source>', 'Source code file and range (e.g., src/index.js:10-20)')
@@ -22,15 +15,29 @@ export const addCommand = new Command('add')
         throw new Error(validationErrors[0]);
       }
 
-      const configPath = path.join(process.cwd(), 'doc-tracker.json');
-      let config: MappingConfig = { mappings: [] };
+      // Generate hashes for the mapping
+      const { sourceHash, targetHash } = await mapping.generateHashes();
+      const mappingWithHashes = new Mapping(source, target, sourceHash, targetHash);
+
+      const configPath = path.join(process.cwd(), '.doc-tracker');
+      let mappings: Mapping[] = [];
 
       if (await fs.pathExists(configPath)) {
-        config = await fs.readJson(configPath);
+        const records = await Mapping.fromFile(configPath);
+        mappings = records.map(record => new Mapping(
+          `${record.source.file}:${record.source.isCharacterRange ? 
+            `${record.source.line}@${record.source.startChar}-${record.source.endChar}` : 
+            `${record.source.startLine}-${record.source.endLine}`}`,
+          `${record.target.file}:${record.target.isCharacterRange ? 
+            `${record.target.line}@${record.target.startChar}-${record.target.endChar}` : 
+            `${record.target.startLine}-${record.target.endLine}`}`,
+          record.sourceHash,
+          record.targetHash
+        ));
       }
 
-      config.mappings.push({ source, target });
-      await fs.writeJson(configPath, config, { spaces: 2 });
+      mappings.push(mappingWithHashes);
+      await Mapping.saveToFile(configPath, mappings);
 
       console.log(`✅ Added mapping: ${source} -> ${target}`);
     } catch (error) {
