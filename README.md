@@ -43,12 +43,23 @@ doc-tracker add <source> <target>
 
 Examples:
 ```bash
-# Line-based mapping
+# Line-based mapping (multiple lines)
 doc-tracker add src/main.py:12-20 docs/usage.md:5-10
 
-# Character-based mapping
+# Line-based mapping (single line)
+doc-tracker add src/main.py:12 docs/usage.md:5
+
+# Character-based mapping (specific characters in a line)
 doc-tracker add src/main.py:12@5-30 docs/usage.md:5@10-20
 ```
+
+The tool supports two types of ranges:
+1. **Line-based ranges**: Specify a line number or range of lines
+   - Single line: `file:5`
+   - Line range: `file:5-10`
+2. **Character-based ranges**: Specify exact characters within a line
+   - Format: `file:line@start-end`
+   - Example: `file:12@5-30` (characters 5-30 of line 12)
 
 ### List All Mappings
 
@@ -83,7 +94,7 @@ Mappings are stored in `.doc-tracker` in your project root. The tool automatical
 - `Gemfile` (Ruby)
 - `composer.json` (PHP)
 
-If no project markers are found, the current directory is used as the project root.
+If no project root markers are found, the current directory is used as the project root.
 
 ## Supported File Types
 

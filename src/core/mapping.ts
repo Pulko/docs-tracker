@@ -71,6 +71,9 @@ export class Mapping implements MappingRecord {
     if (isCharacterRange) {
       const [line, chars] = location.split('@');
       const [startChar, endChar] = chars.split('-').map(Number);
+      if (isNaN(startChar) || isNaN(endChar)) {
+        throw new Error(`Invalid character range: ${chars}`);
+      }
       return {
         file,
         isCharacterRange: true,
@@ -79,13 +82,32 @@ export class Mapping implements MappingRecord {
         endChar
       };
     } else {
-      const [startLine, endLine] = location.split('-').map(Number);
-      return {
-        file,
-        isCharacterRange: false,
-        startLine,
-        endLine
-      };
+      const parts = location.split('-');
+      if (parts.length === 1) {
+        // Single line specified
+        const line = Number(parts[0]);
+        if (isNaN(line)) {
+          throw new Error(`Invalid line number: ${parts[0]}`);
+        }
+        return {
+          file,
+          isCharacterRange: false,
+          startLine: line,
+          endLine: line
+        };
+      } else {
+        // Line range specified
+        const [startLine, endLine] = parts.map(Number);
+        if (isNaN(startLine) || isNaN(endLine)) {
+          throw new Error(`Invalid line range: ${location}`);
+        }
+        return {
+          file,
+          isCharacterRange: false,
+          startLine,
+          endLine
+        };
+      }
     }
   }
 
@@ -262,23 +284,37 @@ export class Mapping implements MappingRecord {
       .filter(line => line.trim())
       .map(line => {
         const [source, target, sourceHash, targetHash] = line.split(' ');
-        return new Mapping(source, target, sourceHash, targetHash);
+        const mapping = new Mapping(source, target, sourceHash, targetHash);
+        
+        // Validate the mapping before returning it
+        const errors = mapping.validate(['file-existence']);
+        if (errors.length > 0) {
+          throw new Error(`Invalid mapping: ${errors.join(', ')}`);
+        }
+        
+        return mapping;
       });
   }
 
   public static async saveToFile(filePath: string, mappings: MappingRecord[]): Promise<void> {
     const content = mappings
-      .map(m => `${m.source.file}:${m.source.isCharacterRange ? 
-        `${m.source.line}@${m.source.startChar}-${m.source.endChar}` : 
-        `${m.source.startLine}-${m.source.endLine}`} ${m.target.file}:${m.target.isCharacterRange ? 
-        `${m.target.line}@${m.target.startChar}-${m.target.endChar}` : 
-        `${m.target.startLine}-${m.target.endLine}`} ${m.sourceHash} ${m.targetHash}`)
+      .map(m => {
+        const sourceRange = m.source.isCharacterRange ? 
+          `${m.source.line}@${m.source.startChar}-${m.source.endChar}` : 
+          `${m.source.startLine}-${m.source.endLine}`;
+        const targetRange = m.target.isCharacterRange ? 
+          `${m.target.line}@${m.target.startChar}-${m.target.endChar}` : 
+          `${m.target.startLine}-${m.target.endLine}`;
+        
+        return `${m.source.file}:${sourceRange} ${m.target.file}:${targetRange} ${m.sourceHash} ${m.targetHash}`;
+      })
       .join('\n');
     await fs.writeFile(filePath, content);
   }
 
   private async readSourceContent(): Promise<string> {
-    const content = await fs.readFile(this.source.file, 'utf-8');
+    const filePath = path.join(this.projectRoot, this.source.file);
+    const content = await fs.readFile(filePath, 'utf-8');
 
     if (this.source.isCharacterRange) {
       const lines = content.split('\n');
@@ -291,7 +327,8 @@ export class Mapping implements MappingRecord {
   }
 
   private async readTargetContent(): Promise<string> {
-    const content = await fs.readFile(this.target.file, 'utf-8');
+    const filePath = path.join(this.projectRoot, this.target.file);
+    const content = await fs.readFile(filePath, 'utf-8');
 
     if (this.target.isCharacterRange) {
       const lines = content.split('\n');
