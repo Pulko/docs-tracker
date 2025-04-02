@@ -278,8 +278,7 @@ export class Mapping implements MappingRecord {
   }
 
   private async readSourceContent(): Promise<string> {
-    const filePath = path.join(this.projectRoot, this.source.file);
-    const content = await fs.readFile(filePath, 'utf-8');
+    const content = await fs.readFile(this.source.file, 'utf-8');
 
     if (this.source.isCharacterRange) {
       const lines = content.split('\n');
@@ -292,8 +291,7 @@ export class Mapping implements MappingRecord {
   }
 
   private async readTargetContent(): Promise<string> {
-    const filePath = path.join(this.projectRoot, this.target.file);
-    const content = await fs.readFile(filePath, 'utf-8');
+    const content = await fs.readFile(this.target.file, 'utf-8');
 
     if (this.target.isCharacterRange) {
       const lines = content.split('\n');
