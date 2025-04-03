@@ -4,6 +4,7 @@ import { ChangeDetector } from '../core/change-detector';
 import path from 'path';
 
 export const checkCommand = new Command('check')
+  .alias('-c')
   .description('Check if documentation is up to date with code changes')
   .argument('[source]', 'Source code file and range (e.g., src/index.js:10-20)')
   .argument('[target]', 'Target documentation file and range (e.g., docs/api.md:5-15)')

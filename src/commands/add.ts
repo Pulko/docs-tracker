@@ -4,6 +4,7 @@ import path from 'path';
 import { Mapping } from '../core/mapping';
 
 export const addCommand = new Command('add')
+  .alias('-a')
   .description('Add a new documentation mapping')
   .argument('<source>', 'Source code file and range (e.g., src/index.js:10-20)')
   .argument('<target>', 'Target documentation file and range (e.g., docs/api.md:5-15)')

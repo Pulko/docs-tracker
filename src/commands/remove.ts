@@ -4,6 +4,7 @@ import path from 'path';
 import { Mapping } from '../core/mapping';
 
 export const removeCommand = new Command('remove')
+  .alias('-r')
   .description('Remove a documentation mapping')
   .argument('<index>', 'Index of the mapping to remove (use list command to see indices)')
   .action(async (indexStr: string) => {

@@ -4,6 +4,7 @@ import path from 'path';
 import { Mapping } from '../core/mapping';
 
 export const listCommand = new Command('list')
+  .alias('-l')
   .description('List all documentation mappings')
   .action(async () => {
     try {

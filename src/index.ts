@@ -14,7 +14,7 @@ const program = new Command();
 const packageJson = JSON.parse(fs.readFileSync(path.join(__dirname, '../package.json'), 'utf-8'));
 
 program
-  .name('doc-tracker')
+  .name('dt')
   .description(packageJson.description)
   .version(packageJson.version);
 
