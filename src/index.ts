@@ -5,6 +5,7 @@ import { checkCommand } from './commands/check';
 import { addCommand } from './commands/add';
 import { listCommand } from './commands/list';
 import { removeCommand } from './commands/remove';
+import { confirmCommand } from './commands/confirm';
 import fs from 'fs-extra';
 import path from 'path';
 
@@ -22,5 +23,6 @@ program.addCommand(checkCommand);
 program.addCommand(addCommand);
 program.addCommand(listCommand);
 program.addCommand(removeCommand);
+program.addCommand(confirmCommand);
 
 program.parse(); 

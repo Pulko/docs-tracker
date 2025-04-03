@@ -1,6 +1,3 @@
-import fs from 'fs-extra';
-import path from 'path';
-import crypto from 'crypto';
 import { Mapping } from './mapping';
 
 export class ChangeDetector {
@@ -16,9 +13,5 @@ export class ChangeDetector {
     // Compare current hashes with stored hashes
     return sourceHash !== this.mapping.getSourceHash() || 
            targetHash !== this.mapping.getTargetHash();
-  }
-
-  private calculateHash(content: string): string {
-    return crypto.createHash('sha256').update(content).digest('hex');
   }
 } 
